@@ -1,0 +1,221 @@
+server:
+  servlet:
+    context-path: /open-api
+  port: ${epm.server.port.apiRouter} #启动端口
+  tomcat:
+    basedir: ${epm.tomcat.basedir}
+    max-connections: 20000
+    max-threads: 1000
+
+spring:
+  application:
+    name: open-api-router
+  profiles:
+    include: epm
+  redis:
+    mode: ${epm.redis.mode} # single cluster
+    hosts: ${epm.redis.hosts}
+    password: ${epm.redis.redis-password}
+    database:  ${epm.redis.database}
+    timeout: 2000
+    rsTimeout: 2000
+    maxAttempts: 100
+    ## redis pool properties
+    pool:
+      maxActive: 200
+      maxIdle: 8     # 连接池中的最大空闲连接
+      minIdle: 2     # 连接池中的最小空闲连接
+      maxWait: 100   # 连接池最大阻塞等待时间（使用负值表示没有限制）
+  datasource:
+    druid:
+      stat-view-servlet:
+        loginUsername: ENC(AwI0ujfM2EhjkyV0P3YQxg==)
+        loginPassword: ENC(TsQ9kdhC0O7bZVD4EhIbGg==)
+    dynamic:
+      master:
+        username: ${epm.datasource.apiRouter-master-username}
+        password: ${epm.datasource.apiRouter-master-password}
+        driver-class-name: ${epm.datasource.driver-class-name}
+        url: ${epm.datasource.apiRouter-master-url}
+        druid:
+          initial-size: 3
+          max-active: 8
+          min-idle: 2
+          max-wait: -1
+          min-evictable-idle-time-millis: 30000
+          max-evictable-idle-time-millis: 30000
+          time-between-eviction-runs-millis: 0
+          validation-query: select 1
+          validation-query-timeout: -1
+          test-on-borrow: false
+          test-on-return: false
+          test-while-idle: true
+    initialization-mode: always
+  #Flogger配置
+  flogger:
+    charset: UTF-8
+    # 日志级别   0:调试信息  1:普通信息   2:警告信息  3:错误信息  4:严重错误信息
+    level: 0,1,2,3,4
+    # 日志路径
+    path: ${epm.flogger.path}
+    # 日志写入文件的间隔时间(默认为1000毫秒)
+    invTime: 1000
+    # 单个日志文件的大小(默认为10M)
+    fileSize: 10485760
+    # 单个日志文件缓存的大小(默认为10KB)
+    cacheSize: 10240
+
+fastdfs:
+  trackerServer: ${epm.fastdfs.trackerServer}
+
+auth:
+  serviceId: EPM-AUTH
+  user:
+    token-header: e-user-token
+  client:
+    id: open-api-router
+    secret: 448852103524331123
+    token-header: e-service-token
+  app:
+    token-header: appToken
+
+jwt:
+    rsa-secret: 123456
+
+# 必须配置
+feign:
+  httpclient:
+    enabled: false
+  okhttp:
+    enabled: true
+
+hystrix:
+  threadpool:
+    default:
+      coreSize: 1000 ##并发执行的最大线程数，默认10
+      maxQueueSize: 1000 ##BlockingQueue的最大队列数
+      queueSizeRejectionThreshold: 500 ##即使maxQueueSize没有达到，达到queueSizeRejectionThreshold该值后，请求也会被拒绝
+  command:
+    default:
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 50000
+          strategy: SEMAPHORE
+ribbon:
+  eureka:
+    enabled: true
+  ReadTimeout: 30000
+  ConnectTimeout: 30000
+  MaxAutoRetries: 0
+  MaxAutoRetriesNextServer: 1
+  OkToRetryOnAllOperations: false
+  httpclient:
+    enabled: false
+  okhttp:
+    enabled: true
+
+#监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+  security:
+    enabled: false
+
+eureka:
+  instance:
+    metadata-map:
+      management:
+        context-path: ${server.servlet.context-path}/actuator
+    health-check-url-path: ${server.servlet.context-path}/actuator/health
+    status-page-url-path: ${server.servlet.context-path}/actuator/info
+    preferIpAddress: true
+    # 心跳间隔
+    leaseRenewalIntervalInSeconds: 10
+    hostname: ${HOSTNAME:localhost}
+  client:
+    serviceUrl:
+      defaultZone: ${epm.eureka.defaultZone}
+#mybatis
+mybatis-plus:
+  mapper-locations: classpath:/mapper/*Mapper.xml
+  #实体扫描，多个package用逗号或者分号分隔
+  typeAliasesPackage: com.bonc.epm.api.entity
+  typeEnumsPackage:
+  global-config:
+    #主键类型  0:"数据库ID自增", 1:"用户输入ID",2:"全局唯一ID (数字类型唯一ID)", 3:"全局唯一ID UUID";
+    id-type: 2
+    #字段策略 0:"忽略判断",1:"非 NULL 判断"),2:"非空判断"
+    field-strategy: 2
+    #驼峰下划线转换
+    db-column-underline: true
+    #刷新mapper 调试神器
+    refresh-mapper: true
+    #数据库大写下划线转换
+    #capital-mode: true
+    #序列接口实现类配置,不在推荐使用此方式进行配置,请使用自定义bean注入
+    key-generator: com.baomidou.mybatisplus.incrementer.H2KeyGenerator
+    #逻辑删除配置（下面3个配置）
+    logic-delete-value: 0
+    logic-not-delete-value: 1
+    #自定义sql注入器,不在推荐使用此方式进行配置,请使用自定义bean注入
+    sql-injector: com.baomidou.mybatisplus.mapper.LogicSqlInjector
+    #自定义填充策略接口实现,不在推荐使用此方式进行配置,请使用自定义bean注入
+    meta-object-handler: com.bonc.epm.api.config.MyMetaObjectHandler
+    #自定义SQL注入器
+    #sql-injector: com.baomidou.springboot.xxx
+    # SQL 解析缓存，开启后多租户 @SqlParser 注解生效
+    sql-parser-cache: true
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+    call-setters-on-nulls: true
+
+discovery:
+  client:
+    registry: http://epm-registry-service/epm-registry
+    commodityPlat: http://commodity-platform/commodity-platform
+    #门户
+    authentication: http://authentication-system-service/authentication-system
+    #数据治理
+    dataMeta: http://data-meta/${epm.service.dataserver.context-path}
+    dataServer: http://data-server/${epm.service.dataserver.context-path}
+    #炎黄订单中心
+    order: http://YANHUANG-ORDER-SYSTEM
+    system-service: http://DATA-CLOUD-SYSTEM-SERVICE/data-cloud-system
+    security: http://security-product-system
+    #统一接入
+    openaccess: http://open-access-system/open-access-system
+
+
+# 配置项目中需要的信息
+projectVar:
+  # url前缀（zuul或者域名或者其他）
+  urlPrefix: ${epm.service.gateway.url}/api/cloud/system/data-cloud-system/
+  appToken:
+    timeSeconds: 1800
+  #es 数据库url配置
+  es:
+    url: ${epm.elasticsearch.url}
+  log:
+    dbType: ${epm.service.apiRouter.writeLog.mode}
+
+
+info:
+  name: open-api-router
+  contact: 东方国信EPM
+  version: "@project.version@"
+
+log:
+  path: ./logs/api
+  #打印级别，大小写无关：TRACE, DEBUG, INFO, WARN, ERROR, ALL 和  OFF 默认是DEBUG
+  level: DEBUG
+
+jasypt:
+  encryptor:
+    password: ^*^
